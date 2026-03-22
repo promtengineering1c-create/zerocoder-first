@@ -4,10 +4,11 @@ from tkinter import ttk
 
 tasks = {}
 
-class TimeEntry:
-    def __init__(self, parent, width, font, bg, fg):
+
+class TimeEntry(tk.Entry):
+    def __init__(self, parent, **kwargs):
         
-        super().__init__(parent, width, font, bg, fg)
+        super().__init__(parent, **kwargs)
 
         self.var = tk.StringVar()
         self.config(textvariable=self.var)
@@ -64,26 +65,62 @@ class Task:
         print(f"Задача: {self.description}")
         print(f"Срок выполнения: {self.deadline}")
 
-root_add_task = tk.Tk()
-root_add_task.config(bg='lightblue')
-root_add_task.title("Новая задача")
+def create_task():
+    root_add_task = tk.Toplevel(root)
+    root_add_task.geometry("500x150")
+    root_add_task.config(bg='lightblue')
+    root_add_task.title("Новая задача")
 
-task_frame = tk.Frame(root_add_task, bg='lightblut')
-task_frame.pack(pady=20)
+    task_frame = tk.Frame(root_add_task, bg='lightblue')
+    task_frame.pack(pady=20)
 
-text_task = tk.Label(task_frame, text="Задача:", font=('Arial', 14), bg='lightblue', fg='darkblue')
-text_task.pack(side=tk.LEFT, padx=10)
+    text_task = tk.Label(task_frame, text="Задача:", font=('Arial', 14), bg='lightblue', fg='darkblue')
+    text_task.pack(side=tk.LEFT, padx=10)
 
-task_entry = tk.Entry(task_frame, width=30, font=('Arial',14), bg='white', fg='black')
-task_entry.pack(side=tk.LEFT)
+    task_entry = tk.Entry(task_frame, width=30, font=('Arial',14), bg='white', fg='black')
+    task_entry.pack(side=tk.LEFT)
 
-time_frame = tk.Frame(root_add_task, bg='lightblut')
-time_frame.pack(pady=20)
+    time_frame = tk.Frame(root_add_task, bg='lightblue')
+    time_frame.pack(side=tk.LEFT, padx=10, pady=5) #
 
-time_task = tk.Label(time_frame, text="Завершить:", font=('Arial', 14), bg='lightblue', fg='darkblue')
-time_task.pack(side=tk.LEFT, padx=10)
+    time_task = tk.Label(time_frame, text="Завершить:", font=('Arial', 14), bg='lightblue', fg='darkblue')
+    time_task.pack(side=tk.LEFT, padx=10)
 
-time_entry = TimeEntry(time_frame, 15, ('Arial',14), 'white', 'black')
-time_entry.pack(side=tk.LEFT)
+    time_entry = TimeEntry(time_frame, width=5, font=('Arial',14), bg='white', fg='black')
+    time_entry.pack(side=tk.LEFT)
 
-root_add_task.mainloop()
+    try:
+        root_add_task.mainloop()
+    except KeyboardInterrupt:
+        print("Программа завершена пользователем")
+        root_add_task.destroy()
+
+root = tk.Tk()
+root.geometry("300x100")
+root.config(bg="lightblue")
+root.title("Список задач на сегодня")
+
+style = ttk.Style()
+style.theme_use('default')
+
+style.configure(
+    "TButton",
+    font=("Arial", 12),
+    padding=6
+)
+
+style.configure(
+    "Primary.TButton",
+    font=("Arial", 14, "bold"),
+    foreground="white",
+    background="#0078D7"
+)
+
+button_add = ttk.Button(root, text="Добавить новую задачу", width=30, style="Primary.TButton", command=create_task)
+button_add.pack(side=tk.LEFT, padx=10)
+
+try:
+    root.mainloop()
+except KeyboardInterrupt:
+    print("Программа завершена пользователем")
+    root.destroy()
