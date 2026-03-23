@@ -1,9 +1,25 @@
 import datetime as time
 import tkinter as tk
 from tkinter import ttk
+import threading
+
+data_lock = threading.Lock()
 
 tasks = {}
+user_data = ()
+active_thread = ()
 
+def add_task():
+    
+    time = user_data[0]
+    text = user_data[1]
+
+    with data_lock:
+        if time in task and not task['time']['stop']:
+            print("У Вас есть активное напомнинаие на это время")
+            return
+        
+        tasks[time] = {"text": text, "stop":False}
 
 class TimeEntry(tk.Entry):
     def __init__(self, parent, **kwargs):
@@ -65,7 +81,7 @@ class Task:
         print(f"Задача: {self.description}")
         print(f"Срок выполнения: {self.deadline}")
 
-def create_task():
+def create_task_window():
     root_add_task = tk.Toplevel(root)
     root_add_task.geometry("500x150")
     root_add_task.config(bg='lightblue')
@@ -88,6 +104,12 @@ def create_task():
 
     time_entry = TimeEntry(time_frame, width=5, font=('Arial',14), bg='white', fg='black')
     time_entry.pack(side=tk.LEFT)
+
+    with data_lock:
+        user_data = time_entry, task_entry
+
+    button_add = tk.Button(root_add_task, text="Создать", width=10, font=("Arial", 14), bg="lightblue", fg="darkblue", command=add_task)
+    button_add.pack(side=tk.LEFT, padx=10)
 
     try:
         root_add_task.mainloop()
@@ -116,7 +138,7 @@ style.configure(
     background="#0078D7"
 )
 
-button_add = ttk.Button(root, text="Добавить новую задачу", width=30, style="Primary.TButton", command=create_task)
+button_add = ttk.Button(root, text="Добавить новую задачу", width=30, style="Primary.TButton", command=create_task_window)
 button_add.pack(side=tk.LEFT, padx=10)
 
 try:
