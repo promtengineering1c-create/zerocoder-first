@@ -1,4 +1,5 @@
-import datetime as time
+import time as time
+import datetime as datetime
 import tkinter as tk
 from tkinter import ttk
 import threading
@@ -9,18 +10,41 @@ tasks = {}
 user_data = ()
 active_thread = ()
 
-def add_task():
+def add_task(task_time, text):
     
-    time = user_data[0]
-    text = user_data[1]
-
     with data_lock:
-        if time in task and not task['time']['stop']:
+
+        if task_time in tasks and not tasks[task_time]['stop']:
             print("У Вас есть активное напомнинаие на это время")
             return
         
-        tasks[time] = {"text": text, "stop":False}
+        tasks[task_time] = {"text":text, "stop":False, "done":False}
 
+def send_reminder():
+    while True:
+        task_time = None
+        now = datetime.datetime.now()
+        now_time = now.strftime("%H:%M")
+
+        show_task = ""
+
+        with data_lock:
+            for task_time in tasks:
+                # Проверяем флаг остановки
+                if tasks[task_time]['stop']:
+                    continue    
+ 
+                # Проверяем, пришло ли время напоминания
+                if task_time == now_time:
+                    tasks[task_time]['stop'] = True  # Устанавливаем флаг остановки
+                    show_task = tasks[task_time]['text']
+                    break
+        
+        if show_task:
+            root.after(0, create_task_window, task_time, show_task)
+
+        time.sleep(30)
+ 
 class TimeEntry(tk.Entry):
     def __init__(self, parent, **kwargs):
         
@@ -81,7 +105,43 @@ class Task:
         print(f"Задача: {self.description}")
         print(f"Срок выполнения: {self.deadline}")
 
-def create_task_window():
+def get_current_tasks():
+    with data_lock:
+        current_tasks = [Task(tasks[task_time]['text'], task_time, tasks[task_time]['done']) for task_time in tasks if not tasks[task_time]['done']]
+    return current_tasks
+
+def done_task(task_time):
+    with data_lock:
+        if task_time in tasks:
+            tasks[task_time]['done'] = True
+            tasks[task_time]['stop'] = True
+
+def create_task_window(task_time, text):
+
+    def on_close(task_time):
+        done_task(task_time)
+        win_task.destroy()
+        root.update()
+
+    win_task = tk.Toplevel(root)
+    win_task.geometry("500x150")
+    win_task.config(bg='lightblue')
+    win_task.title("🔔 Напоминание")
+
+    text_task = tk.Label(win_task, text=f"⏰{task_time}\n{text}", font=('Arial', 14), bg='lightblue', fg='darkblue')
+    text_task.pack(side=tk.LEFT, padx=10)
+
+    button_done = tk.Button(win_task, text="✅ Выполнено", width=15, font=("Arial", 14), bg="lightblue", fg="darkblue", command=lambda: on_close(task_time))
+    button_done.pack(side=tk.LEFT, padx=10)
+ 
+def create_add_task_window():
+
+    def save_tasks(task_time, text):
+        add_task(task_time, text)
+
+        root_add_task.destroy()
+        root.update()
+
     root_add_task = tk.Toplevel(root)
     root_add_task.geometry("500x150")
     root_add_task.config(bg='lightblue')
@@ -105,17 +165,8 @@ def create_task_window():
     time_entry = TimeEntry(time_frame, width=5, font=('Arial',14), bg='white', fg='black')
     time_entry.pack(side=tk.LEFT)
 
-    with data_lock:
-        user_data = time_entry, task_entry
-
-    button_add = tk.Button(root_add_task, text="Создать", width=10, font=("Arial", 14), bg="lightblue", fg="darkblue", command=add_task)
+    button_add = tk.Button(root_add_task, text="Создать", width=10, font=("Arial", 14), bg="lightblue", fg="darkblue", command=lambda: save_tasks(time_entry.get(), task_entry.get()))
     button_add.pack(side=tk.LEFT, padx=10)
-
-    try:
-        root_add_task.mainloop()
-    except KeyboardInterrupt:
-        print("Программа завершена пользователем")
-        root_add_task.destroy()
 
 root = tk.Tk()
 root.geometry("300x100")
@@ -138,9 +189,12 @@ style.configure(
     background="#0078D7"
 )
 
-button_add = ttk.Button(root, text="Добавить новую задачу", width=30, style="Primary.TButton", command=create_task_window)
+button_add = ttk.Button(root, text="Добавить новую задачу", width=30, style="Primary.TButton", command=create_add_task_window)
 button_add.pack(side=tk.LEFT, padx=10)
 
+reminder_thread = threading.Thread(target=send_reminder, daemon=True)
+reminder_thread.start()
+  
 try:
     root.mainloop()
 except KeyboardInterrupt:
