@@ -7,18 +7,18 @@ import threading
 data_lock = threading.Lock()
 
 tasks = {}
-user_data = ()
 active_thread = ()
 
 def add_task(task_time, text):
     
     with data_lock:
 
-        if task_time in tasks and not tasks[task_time]['stop']:
-            print("У Вас есть активное напомнинаие на это время")
+        if task_time in tasks and not tasks[task_time].done:
+            print("У Вас есть задач на это время")
             return
         
-        tasks[task_time] = {"text":text, "stop":False, "done":False}
+        new_task = Task(text, task_time, False)
+        tasks[task_time] = new_task
 
 def send_reminder():
     while True:
@@ -31,13 +31,12 @@ def send_reminder():
         with data_lock:
             for task_time in tasks:
                 # Проверяем флаг остановки
-                if tasks[task_time]['stop']:
+                if tasks[task_time].done:
                     continue    
  
                 # Проверяем, пришло ли время напоминания
                 if task_time == now_time:
-                    tasks[task_time]['stop'] = True  # Устанавливаем флаг остановки
-                    show_task = tasks[task_time]['text']
+                    show_task = tasks[task_time].description
                     break
         
         if show_task:
@@ -104,18 +103,45 @@ class Task:
     def info(self):
         print(f"Задача: {self.description}")
         print(f"Срок выполнения: {self.deadline}")
+        print(f"Статус: {'Выполнено' if self.done else 'Не выполнено'}")
 
-def get_current_tasks():
+    def mark_done(self):
+        self.done = True
+
+def get_current_tasks(only_current=True):
+    task_listbox.delete(0, tk.END)
+
     with data_lock:
-        current_tasks = [Task(tasks[task_time]['text'], task_time, tasks[task_time]['done']) for task_time in tasks if not tasks[task_time]['done']]
-    return current_tasks
+        if only_current:
+            current_tasks = [task for task in tasks.values() if not task['task'].done]  
+        else:
+            current_tasks = [task for task in tasks.values()]
+
+    if current_tasks:
+        current_tasks.sort(key=lambda x: x['task'].deadline)
+        status_icon = "✅ " if task.done else ""
+        for task, task_time in current_tasks:
+            task_listbox.insert(tk.END, f"{task_time}: {status_icon}{task.description}")      
 
 def done_task(task_time):
     with data_lock:
         if task_time in tasks:
-            tasks[task_time]['done'] = True
-            tasks[task_time]['stop'] = True
+            tasks[task_time].done = True
 
+def delete_task(delete=False):
+    selected_indices = task_listbox.curselection()
+    if not selected_indices:
+        return
+
+    with data_lock:
+        for index in reversed(selected_indices):
+            task_time = task_listbox.get(index).split(":")[0]
+            if task_time in tasks:
+                if delete:
+                    del tasks[task_time]
+                else:
+                    tasks[task_time].mark_done()
+   
 def create_task_window(task_time, text):
 
     def on_close(task_time):
@@ -189,8 +215,22 @@ style.configure(
     background="#0078D7"
 )
 
-button_add = ttk.Button(root, text="Добавить новую задачу", width=30, style="Primary.TButton", command=create_add_task_window)
+manage_frame = tk.Frame(root, bg="lightblue")
+manage_frame.pack(side=tk.TOP, pady=5, anchor="w")
+
+button_add = ttk.Button(manage_frame, text="Добавить", width=10, style="Primary.TButton", command=create_add_task_window)
 button_add.pack(side=tk.LEFT, padx=10)
+
+button_done = tk.Button(manage_frame, text="Выполнено", width=10, font=("Arial", 14), bg="lightblue", fg="darkblue", command=delete_task)
+button_done.pack(side=tk.LEFT, padx=10)
+
+button_del = tk.Button(manage_frame, text="Удалить", width=10, font=("Arial", 14), bg="lightblue", fg="darkblue", command=lambda:delete_task(True))
+button_del.pack(side=tk.LEFT, padx=10)
+
+task_listbox = tk.Listbox(root, selectmode=tk.MULTIPLE, width=50, height=10, font=("Arial", 14), bg="white", fg="black")
+task_listbox.pack(pady=10)  
+
+get_current_tasks(False)  
 
 reminder_thread = threading.Thread(target=send_reminder, daemon=True)
 reminder_thread.start()
