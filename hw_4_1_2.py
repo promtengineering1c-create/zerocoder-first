@@ -71,8 +71,10 @@ stores = [store1, store2, store3]
 
 store1.add_item("яблоки", 0.5)  
 store1.add_item("бананы", 0.75)
+
 store2.add_item("груши", 1.0)
 store2.add_item("ананас", 1.5)
+
 store3.add_item("бананы", 0.5)
 store3.add_item("ананас", 1.0)  
 
