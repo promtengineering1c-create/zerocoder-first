@@ -100,7 +100,7 @@ class TimeEntry(tk.Entry):
         
 class Task:
     description: str
-    deadline: time
+    deadline: str
     done: bool
 
     def __init__(self, description, deadline, done):
