@@ -31,13 +31,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
-def deal_damage(damage: int, monster: Monster):
-        monster.health -= damage
-        if monster.health <= 0:
-            print(f"{monster.name} убит")
-        else:
-            print(f"{monster.name} осталось {monster.health} здоровья")
-
 class Fighter():
     name: str
     weapon: Weapon
@@ -49,10 +42,25 @@ class Fighter():
 
 class Monster():
     name: str
-    health: int
+    __health: int
     def __init__(self, name, health = 100):
         self.name = name
-        self.health = health
+        self.__health = health
+
+    @property
+    def health(self):
+        return self.__health
+
+    @health.setter
+    def health(self, value):
+        self.__health = value
+
+    def take_damage(self, damage: int):
+            self.__health -= damage
+            if self.__health <= 0:
+                print(f"{self.name} убит")
+            else:
+                print(f"{self.name} осталось {self.__health} здоровья")
 
 class Weapon(ABC):
     name: str
@@ -62,7 +70,7 @@ class Weapon(ABC):
         self.damage = damage
 
     @abstractmethod
-    def attack(self):
+    def attack(self, fighter: Fighter, monster: Monster):
         pass
 
 class Sling(Weapon):
@@ -71,7 +79,7 @@ class Sling(Weapon):
 
     def attack(self, fighter: Fighter, monster: Monster):
         print(f"{fighter.name} взмахнул {self.name} и нанес {monster.name} урон {self.damage}") 
-        deal_damage(self.damage, monster)
+        monster.take_damage(self.damage)
         
 class Mace(Weapon):
     def __init__(self, name = "палица", damage = 2):        
@@ -79,7 +87,7 @@ class Mace(Weapon):
 
     def attack(self, fighter: Fighter, monster: Monster):
         print(f"{fighter.name} ударил {self.name} и наносит {monster.name} урон {self.damage}") 
-        deal_damage(self.damage, monster)
+        monster.take_damage(self.damage)
 
 class Sword(Weapon):
     def __init__(self, name = "меч", damage = 5):        
@@ -87,7 +95,7 @@ class Sword(Weapon):
 
     def attack(self, fighter: Fighter, monster: Monster):
         print(f"{fighter.name} вонзил свой {self.name} в {monster.name} и наносит урон {self.damage}") 
-        deal_damage(self.damage, monster)
+        monster.take_damage(self.damage)
 
 class Bow(Weapon):
     def __init__(self, name = "лук", damage = 2):        
@@ -95,7 +103,7 @@ class Bow(Weapon):
 
     def attack(self, fighter: Fighter, monster: Monster):
         print(f"{fighter.name} выстрелил из {self.name} и {monster.name} получил урон {self.damage}") 
-        deal_damage(self.damage, monster)
+        monster.take_damage(self.damage)
 
 robin = Fighter("Робин")
 print(f"Боец {robin.name} готов к бою")
