@@ -57,8 +57,8 @@ def get_users():
             parts = line.split()
             if len(parts) >= 3:
                 user = parts[0]
-                session_id = parts[1] if parts[1].isdigit() else "N/A"
-                state = parts[2]
+                session_id = parts[2] if parts[2].isdigit() else "N/A"
+                state = parts[3]
                 tree.insert('', 'end', values=(user, session_id, state))
     except Exception as e:
         tree.insert('', 'end', values=("Ошибка", "", str(e)))
